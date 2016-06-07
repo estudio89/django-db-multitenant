@@ -23,6 +23,7 @@
 
 import logging
 import time
+import sys
 
 from django.core.exceptions import ImproperlyConfigured
 from importlib import import_module
@@ -55,8 +56,13 @@ class DatabaseWrapper(WRAPPED_BACKEND.DatabaseWrapper):
             dbname = self.threadlocal.get_dbname()
 
             if not dbname:
-                dbname = super(DatabaseWrapper, self).get_connection_params()['db']
-                # raise ImproperlyConfigured('dbname not set at cursor create time')
+                try:
+                    dbname = super(DatabaseWrapper, self).get_connection_params()['db']
+                except KeyError:
+                    if sys.argv[1] == "test":
+                        return cursor
+                    else:
+                        raise ImproperlyConfigured('dbname not set at cursor create time')
 
         # Cache the applied dbname as "mt_dbname" on the connection, avoiding
         # an extra execute() if already set.  Importantly, we assume no other
